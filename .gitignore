@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+release/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Certificates (generated at runtime, not source files)
+# Only ignore certificate files in user data directory, not source code
+*.pem
+*.key
+*.crt
+
+# Electron
+*.asar
+
+# Misc
+*.tsbuildinfo
