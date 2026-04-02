@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useRulesStore } from '../../stores/rulesStore';
-import type { Rule, RuleType, MockRule, RewriteRule, BlockRule } from '../../../shared/types';
+import type { Rule, RuleType, MockRule, RewriteRule, BlockRule, BreakpointRule } from '../../../shared/types';
 
 interface RuleEditorProps {
   rule: Rule | null;
+  initialType?: RuleType;
   onClose: () => void;
 }
 
-export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onClose }) => {
+export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, initialType = 'mock', onClose }) => {
   const { addRule, updateRule } = useRulesStore();
   const [isSaving, setIsSaving] = useState(false);
 
-  const [type, setType] = useState<RuleType>(rule?.type || 'mock');
+  const [type, setType] = useState<RuleType>(rule?.type || initialType);
   const [name, setName] = useState(rule?.name || '');
   const [urlPattern, setUrlPattern] = useState(rule?.matcher.urlPattern || '*');
   const [methods, setMethods] = useState<string[]>(rule?.matcher.methods || []);
@@ -44,6 +45,11 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onClose }) => {
   );
   const [blockMessage, setBlockMessage] = useState(
     rule?.type === 'block' ? (rule as BlockRule).errorMessage || 'Blocked' : 'Blocked'
+  );
+
+  // Breakpoint specific
+  const [breakOn, setBreakOn] = useState<'request' | 'response' | 'both'>(
+    rule?.type === 'breakpoint' ? (rule as BreakpointRule).breakOn : 'request'
   );
 
   const handleSave = async () => {
@@ -91,6 +97,11 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onClose }) => {
           ...baseRule,
           errorCode: blockCode,
           errorMessage: blockMessage,
+        };
+      } else if (type === 'breakpoint') {
+        fullRule = {
+          ...baseRule,
+          breakOn,
         };
       } else {
         fullRule = baseRule;
@@ -143,7 +154,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onClose }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <div className="flex gap-2">
-                  {(['mock', 'rewrite', 'block'] as RuleType[]).map((t) => (
+                  {(['mock', 'rewrite', 'breakpoint', 'block'] as RuleType[]).map((t) => (
                     <button
                       key={t}
                       onClick={() => setType(t)}
@@ -284,6 +295,27 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ rule, onClose }) => {
                   />
                 </div>
               </>
+            )}
+
+            {type === 'breakpoint' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Break On</label>
+                <div className="flex gap-2">
+                  {(['request', 'response', 'both'] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setBreakOn(opt)}
+                      className={`px-3 py-1.5 text-sm rounded transition-colors capitalize ${
+                        breakOn === opt
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Enabled */}

@@ -129,9 +129,11 @@ export const useTrafficStore = create<TrafficState>((set, get) => ({
         }
       }
 
-      // Show only errors
+      // Show only errors (network errors OR HTTP 4xx/5xx)
       if (filter.showOnlyErrors) {
-        if (entry.status !== 'error') return false;
+        const isNetworkError = entry.status === 'error';
+        const isHttpError = entry.response && entry.response.statusCode >= 400;
+        if (!isNetworkError && !isHttpError) return false;
       }
 
       // Show only mocked

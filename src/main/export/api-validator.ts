@@ -89,6 +89,10 @@ function extractPath(url: string, servers?: { url: string }[]): string {
       for (const server of servers) {
         try {
           const serverUrl = new URL(server.url);
+          // When the server URL is absolute (has a host), the request host must match.
+          if (serverUrl.host && serverUrl.host.toLowerCase() !== parsed.host.toLowerCase()) {
+            continue;
+          }
           if (pathname.startsWith(serverUrl.pathname) && serverUrl.pathname !== '/') {
             pathname = pathname.slice(serverUrl.pathname.length) || '/';
             break;

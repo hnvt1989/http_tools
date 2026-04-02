@@ -164,7 +164,7 @@ function formatBodyContent(
   if (!body) return '';
   if (format === 'hex') return hexDump(body);
 
-  const str = typeof body === 'string' ? body : body.toString('utf-8');
+  const str = typeof body === 'string' ? body : new TextDecoder().decode(body);
 
   if (format === 'raw') return str;
 
@@ -201,7 +201,7 @@ function generateCurlCommand(entry: TrafficEntry): string {
   }
 
   if (request.body) {
-    const bodyStr = typeof request.body === 'string' ? request.body : request.body.toString('utf-8');
+    const bodyStr = typeof request.body === 'string' ? request.body : new TextDecoder().decode(request.body);
     const escaped = bodyStr.replace(/'/g, "'\\''");
     parts.push(`  -d '${escaped}'`);
   }
@@ -281,7 +281,7 @@ export const TrafficDetail: React.FC<TrafficDetailProps> = ({ entry }) => {
 
     const body = entry.request.body;
     if (body) {
-      const str = typeof body === 'string' ? body : body.toString('utf-8');
+      const str = typeof body === 'string' ? body : new TextDecoder().decode(body);
       try {
         setEditBody(JSON.stringify(JSON.parse(str), null, 2));
       } catch {
@@ -337,7 +337,7 @@ export const TrafficDetail: React.FC<TrafficDetailProps> = ({ entry }) => {
         body: entry.request.body
           ? typeof entry.request.body === 'string'
             ? entry.request.body
-            : entry.request.body.toString('utf-8')
+            : new TextDecoder().decode(entry.request.body)
           : undefined,
       })
       .then((code) => {

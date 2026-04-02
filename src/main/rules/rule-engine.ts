@@ -1,4 +1,3 @@
-import { minimatch } from 'minimatch';
 import type {
   Rule,
   MockRule,
@@ -89,22 +88,24 @@ export class RuleEngine {
     let urlMatches = false;
     try {
       // Handle special patterns
-      if (matcher.urlPattern === '*' || matcher.urlPattern === '**') {
+      if (!matcher.urlPattern || matcher.urlPattern === '*' || matcher.urlPattern === '**') {
         urlMatches = true;
+      } else if (matcher.urlPattern.startsWith('/') && matcher.urlPattern.endsWith('/')) {
+        // Regex pattern enclosed in slashes
+        const regexStr = matcher.urlPattern.slice(1, -1);
+        urlMatches = new RegExp(regexStr, 'i').test(url);
       } else if (matcher.urlPattern.includes('*')) {
-        urlMatches = minimatch(url, matcher.urlPattern, { nocase: true });
+        // For URL matching, wildcards must cross path separators.
+        // Convert glob wildcards to a regex where both * and ** match any character
+        // sequence including '/' — more intuitive for URL patterns.
+        const escaped = matcher.urlPattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+        const regexStr = escaped.replace(/\*\*/g, '.*').replace(/\*/g, '.*');
+        urlMatches = new RegExp(`^${regexStr}$`, 'i').test(url);
       } else {
         // Exact match or contains
         urlMatches =
           url === matcher.urlPattern ||
           url.includes(matcher.urlPattern);
-      }
-
-      // Also try regex if glob didn't match
-      if (!urlMatches && matcher.urlPattern.startsWith('/') && matcher.urlPattern.endsWith('/')) {
-        const regexStr = matcher.urlPattern.slice(1, -1);
-        const regex = new RegExp(regexStr, 'i');
-        urlMatches = regex.test(url);
       }
     } catch {
       // If pattern is invalid, try simple includes

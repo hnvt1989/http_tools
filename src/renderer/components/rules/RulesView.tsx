@@ -7,12 +7,14 @@ export const RulesView: React.FC = () => {
   const { rules, isLoading, loadRules, deleteRule, toggleRule, selectRule, selectedId } = useRulesStore();
   const [showEditor, setShowEditor] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
+  const [initialType, setInitialType] = useState<RuleType>('mock');
 
   useEffect(() => {
     loadRules();
   }, [loadRules]);
 
-  const handleCreateRule = (_type: RuleType) => {
+  const handleCreateRule = (type: RuleType) => {
+    setInitialType(type);
     setEditingRule(null);
     setShowEditor(true);
   };
@@ -59,6 +61,12 @@ export const RulesView: React.FC = () => {
             className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             + Rewrite
+          </button>
+          <button
+            onClick={() => handleCreateRule('breakpoint')}
+            className="px-3 py-1.5 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            + Breakpoint
           </button>
           <button
             onClick={() => handleCreateRule('block')}
@@ -178,7 +186,7 @@ export const RulesView: React.FC = () => {
 
       {/* Editor modal */}
       {showEditor && (
-        <RuleEditor rule={editingRule} onClose={handleCloseEditor} />
+        <RuleEditor rule={editingRule} initialType={initialType} onClose={handleCloseEditor} />
       )}
     </div>
   );

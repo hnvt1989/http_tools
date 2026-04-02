@@ -165,7 +165,7 @@ export const SettingsView: React.FC = () => {
       filters: [{ name: 'JSON File', extensions: ['json'] }],
     });
     if (!result.canceled && result.filePath) {
-      await window.electronAPI.app.writeFile(result.filePath, JSON.stringify(rulesData, null, 2));
+      await window.electronAPI.app.writeFile(result.filePath, rulesData);
       alert('Rules exported successfully!');
     }
   };
@@ -177,8 +177,7 @@ export const SettingsView: React.FC = () => {
     });
     if (!result.canceled && result.filePaths.length > 0) {
       const content = await window.electronAPI.app.readFile(result.filePaths[0]);
-      const data = JSON.parse(content);
-      await window.electronAPI.rules.import(data);
+      await window.electronAPI.rules.import(content);
       alert('Rules imported successfully!');
     }
   };
