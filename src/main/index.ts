@@ -207,6 +207,16 @@ function setupIpcHandlers() {
     ruleEngine.setRules(await rulesStore.list());
   });
 
+  ipcMain.handle(IPC_CHANNELS.RULES_EXPORT, async () => {
+    return rulesStore.exportRules();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.RULES_IMPORT, async (_, data: string) => {
+    const rules = await rulesStore.importRules(data);
+    ruleEngine.setRules(await rulesStore.list());
+    return rules;
+  });
+
   // Certificate handlers
   ipcMain.handle(IPC_CHANNELS.CERT_GET_CA, () => {
     return caGenerator.getCA();

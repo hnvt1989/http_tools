@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useClientStore } from '../../stores/clientStore';
 
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
@@ -28,16 +28,25 @@ export const ClientView: React.FC = () => {
     await sendRequest();
   };
 
-  const handleSave = async () => {
-    const name = prompt('Enter a name for this request:');
-    if (name) {
-      await saveCurrentRequest(name);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [saveName, setSaveName] = useState('');
+
+  const handleSave = () => {
+    setSaveName(currentRequest.url || 'New Request');
+    setShowSaveInput(true);
+  };
+
+  const handleSaveConfirm = async () => {
+    if (saveName.trim()) {
+      await saveCurrentRequest(saveName.trim());
+      setShowSaveInput(false);
+      setSaveName('');
     }
   };
 
   const formatBody = (body: Buffer | string | null | undefined): string => {
     if (!body) return '';
-    const str = typeof body === 'string' ? body : Buffer.from(body).toString('utf-8');
+    const str = typeof body === 'string' ? body : new TextDecoder().decode(body);
     try {
       return JSON.stringify(JSON.parse(str), null, 2);
     } catch {
@@ -150,6 +159,33 @@ export const ClientView: React.FC = () => {
               Reset
             </button>
           </div>
+
+          {/* Save name input */}
+          {showSaveInput && (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveConfirm()}
+                placeholder="Request name..."
+                autoFocus
+                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleSaveConfirm}
+                className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowSaveInput(false)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
 
           {/* Headers & Body tabs */}
           <div className="flex gap-4">

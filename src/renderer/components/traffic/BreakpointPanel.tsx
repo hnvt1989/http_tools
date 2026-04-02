@@ -45,7 +45,7 @@ export const BreakpointPanel: React.FC<BreakpointPanelProps> = ({ pause, onResum
     pause.data.body
       ? typeof pause.data.body === 'string'
         ? pause.data.body
-        : pause.data.body.toString('utf-8')
+        : new TextDecoder().decode(pause.data.body)
       : ''
   );
   const [headersError, setHeadersError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export const BreakpointPanel: React.FC<BreakpointPanelProps> = ({ pause, onResum
     const originalBody = pause.data.body
       ? typeof pause.data.body === 'string'
         ? pause.data.body
-        : pause.data.body.toString('utf-8')
+        : new TextDecoder().decode(pause.data.body)
       : '';
     if (body !== originalBody) return true;
     return false;

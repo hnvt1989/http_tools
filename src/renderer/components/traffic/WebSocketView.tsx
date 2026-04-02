@@ -41,7 +41,7 @@ function formatTime(timestamp: number): string {
 
 function formatMessageData(data: string | Buffer, opcode: number): string {
   if (opcode !== 1) return typeof data === 'string' ? data : '[binary data]';
-  const str = typeof data === 'string' ? data : data.toString('utf-8');
+  const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
   try {
     const parsed = JSON.parse(str);
     return JSON.stringify(parsed, null, 2);
@@ -52,7 +52,7 @@ function formatMessageData(data: string | Buffer, opcode: number): string {
 
 function isJsonMessage(data: string | Buffer, opcode: number): boolean {
   if (opcode !== 1) return false;
-  const str = typeof data === 'string' ? data : data.toString('utf-8');
+  const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
   try {
     JSON.parse(str);
     return true;

@@ -1,4 +1,3 @@
-import { minimatch } from 'minimatch';
 import type { RuleMatcher, TrafficEntry } from '../../shared/types';
 
 export class RuleMatcherEngine {
@@ -34,17 +33,6 @@ export class RuleMatcherEngine {
       return true;
     }
 
-    // Try glob match first
-    try {
-      if (pattern.includes('*') || pattern.includes('?')) {
-        if (minimatch(url, pattern, { nocase: true })) {
-          return true;
-        }
-      }
-    } catch {
-      // Ignore glob errors
-    }
-
     // Try regex match (pattern enclosed in slashes)
     if (pattern.startsWith('/') && pattern.endsWith('/')) {
       try {
@@ -54,6 +42,25 @@ export class RuleMatcherEngine {
         }
       } catch {
         // Ignore regex errors
+      }
+      return false;
+    }
+
+    // Try glob/wildcard match
+    if (pattern.includes('*') || pattern.includes('?')) {
+      try {
+        // For URL matching, wildcards must cross path separators.
+        // Convert glob wildcards to a regex where *, **, and ? match across '/'.
+        const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+        const regexStr = escaped
+          .replace(/\*\*/g, '.*')
+          .replace(/\*/g, '.*')
+          .replace(/\?/g, '.');
+        if (new RegExp(`^${regexStr}$`, 'i').test(url)) {
+          return true;
+        }
+      } catch {
+        // Ignore errors
       }
     }
 
@@ -65,24 +72,6 @@ export class RuleMatcherEngine {
     // Try contains match
     if (url.includes(pattern)) {
       return true;
-    }
-
-    // Try URL parts match
-    try {
-      const parsedUrl = new URL(url);
-
-      // Match against pathname
-      if (minimatch(parsedUrl.pathname, pattern, { nocase: true })) {
-        return true;
-      }
-
-      // Match against host + pathname
-      const hostPath = parsedUrl.host + parsedUrl.pathname;
-      if (minimatch(hostPath, pattern, { nocase: true })) {
-        return true;
-      }
-    } catch {
-      // URL parsing failed, skip these checks
     }
 
     return false;

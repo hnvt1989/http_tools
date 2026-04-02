@@ -43,8 +43,11 @@ export class HttpClient {
 
   private async executeRequest(
     request: ClientRequest,
-    id: string
+    id: string,
+    redirectCount = 0
   ): Promise<ClientResponse> {
+    const MAX_REDIRECTS = 10;
+
     return new Promise((resolve, reject) => {
       const timing: Partial<TimingData> = {
         start: Date.now(),
@@ -83,6 +86,47 @@ export class HttpClient {
       const req = lib.request(options, (res) => {
         timing.firstByte = Date.now() - timing.start!;
 
+        // Handle redirects when followRedirects is true (default)
+        const shouldFollow = request.followRedirects !== false;
+        if (
+          shouldFollow &&
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          res.resume(); // drain the response body
+          if (redirectCount >= MAX_REDIRECTS) {
+            reject(new Error(`Too many redirects (max ${MAX_REDIRECTS})`));
+            return;
+          }
+          // Resolve the redirect location relative to the current URL
+          let redirectUrl: string;
+          try {
+            redirectUrl = new URL(res.headers.location, request.url).href;
+          } catch {
+            reject(new Error(`Invalid redirect location: ${res.headers.location}`));
+            return;
+          }
+          // For 301/302/303 with non-GET, switch to GET and drop the body
+          const redirectMethod =
+            res.statusCode === 303 ||
+            ((res.statusCode === 301 || res.statusCode === 302) && request.method !== 'GET')
+              ? 'GET'
+              : request.method;
+          const redirectBody =
+            redirectMethod !== request.method ? undefined : request.body;
+
+          this.executeRequest(
+            { ...request, url: redirectUrl, method: redirectMethod, body: redirectBody },
+            id,
+            redirectCount + 1
+          )
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
         const chunks: Buffer[] = [];
 
         res.on('data', (chunk: Buffer) => {
@@ -118,15 +162,6 @@ export class HttpClient {
         req.destroy();
         reject(new Error(`Request timeout after ${request.timeout || 30000}ms`));
       });
-
-      // Handle redirect manually if not following
-      if (request.followRedirects === false) {
-        req.on('response', (res) => {
-          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400) {
-            // Don't follow, just return the redirect response
-          }
-        });
-      }
 
       // Write body if present
       if (request.body) {
