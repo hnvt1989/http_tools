@@ -24,17 +24,18 @@ export class CertGenerator {
     }
 
     // Generate new key pair for this host
-    const keys = forge.pki.rsa.generateKeyPair(2048);
+    // Using 1024-bit keys for speed (acceptable for local debugging proxy)
+    const keys = forge.pki.rsa.generateKeyPair(1024);
 
     // Create certificate
     const cert = forge.pki.createCertificate();
     cert.publicKey = keys.publicKey;
     cert.serialNumber = this.generateSerialNumber();
 
-    // Short validity for security (24 hours)
+    // Validity period (7 days for local debugging)
     const now = new Date();
     cert.validity.notBefore = now;
-    cert.validity.notAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    cert.validity.notAfter = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // Set subject
     cert.setSubject([

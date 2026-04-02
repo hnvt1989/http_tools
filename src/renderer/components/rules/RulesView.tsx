@@ -12,7 +12,7 @@ export const RulesView: React.FC = () => {
     loadRules();
   }, [loadRules]);
 
-  const handleCreateRule = (type: RuleType) => {
+  const handleCreateRule = (_type: RuleType) => {
     setEditingRule(null);
     setShowEditor(true);
   };

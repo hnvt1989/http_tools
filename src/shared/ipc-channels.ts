@@ -12,6 +12,9 @@ export const IPC_CHANNELS = {
   TRAFFIC_CLEAR: 'traffic:clear',
   TRAFFIC_EXPORT: 'traffic:export',
   TRAFFIC_IMPORT: 'traffic:import',
+  TRAFFIC_EXPORT_HAR: 'traffic:export:har',
+  TRAFFIC_IMPORT_HAR: 'traffic:import:har',
+  TRAFFIC_GET_ALL: 'traffic:get-all',
 
   // Rules Management
   RULES_LIST: 'rules:list',
@@ -28,10 +31,14 @@ export const IPC_CHANNELS = {
   CERT_EXPORT_CA: 'cert:export-ca',
   CERT_REGENERATE_CA: 'cert:regenerate-ca',
   CERT_TRUST_STATUS: 'cert:trust-status',
+  CERT_INSTALL_CA: 'cert:install-ca',
+  CERT_REMOVE_CA: 'cert:remove-ca',
+  CERT_IS_INSTALLED: 'cert:is-installed',
 
   // HTTP Client
   CLIENT_SEND: 'client:send',
   CLIENT_CANCEL: 'client:cancel',
+  CLIENT_RESEND: 'client:resend',
 
   // Saved Requests
   REQUESTS_LIST: 'requests:list',
@@ -48,10 +55,42 @@ export const IPC_CHANNELS = {
   BREAKPOINT_RESUME: 'breakpoint:resume',
   BREAKPOINT_DROP: 'breakpoint:drop',
   BREAKPOINT_EDIT: 'breakpoint:edit',
+  BREAKPOINT_LIST: 'breakpoint:list',
 
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
+
+  // WebSocket
+  WEBSOCKET_NEW: 'websocket:new',
+  WEBSOCKET_MESSAGE: 'websocket:message',
+  WEBSOCKET_CLOSED: 'websocket:closed',
+  WEBSOCKET_ERROR: 'websocket:error',
+
+  // Terminal Interception
+  TERMINAL_LAUNCH: 'terminal:launch',
+  TERMINAL_EXITED: 'terminal:exited',
+
+  // Code Snippets
+  SNIPPET_GENERATE: 'snippet:generate',
+
+  // Performance Analysis
+  PERFORMANCE_ANALYZE: 'performance:analyze',
+
+  // TLS Passthrough
+  TLS_PASSTHROUGH_LIST: 'tls:passthrough:list',
+  TLS_PASSTHROUGH_ADD: 'tls:passthrough:add',
+  TLS_PASSTHROUGH_REMOVE: 'tls:passthrough:remove',
+
+  // Upstream Proxy
+  UPSTREAM_PROXY_GET: 'upstream:proxy:get',
+  UPSTREAM_PROXY_SET: 'upstream:proxy:set',
+
+  // API Validation
+  API_SPEC_ADD: 'api:spec:add',
+  API_SPEC_REMOVE: 'api:spec:remove',
+  API_SPEC_LIST: 'api:spec:list',
+  API_VALIDATE: 'api:validate',
 
   // App
   APP_VERSION: 'app:version',
@@ -63,6 +102,8 @@ export const IPC_CHANNELS = {
   APP_SHOW_OPEN_DIALOG: 'app:show-open-dialog',
   APP_LAUNCH_BROWSER: 'app:launch-browser',
   APP_BROWSER_EXITED: 'app:browser-exited',
+  APP_WRITE_FILE: 'app:write-file',
+  APP_READ_FILE: 'app:read-file',
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];

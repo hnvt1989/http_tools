@@ -1,4 +1,4 @@
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
@@ -204,34 +204,40 @@ export class ChromeProfileSetup {
    * not NSS databases. Therefore, we always need --ignore-certificate-errors
    * on macOS for HTTPS interception to work properly.
    */
-  static getLaunchArgs(setupResult: ProfileSetupResult, proxyPort: number): string[] {
+  /**
+   * Returns Chrome launch arguments.
+   * @param setupResult - Profile setup result
+   * @param proxyPort - Proxy server port
+   * @param caInstalledInKeychain - If true, CA is trusted in system keychain, no need for --ignore-certificate-errors
+   */
+  static getLaunchArgs(setupResult: ProfileSetupResult, proxyPort: number, caInstalledInKeychain = false): string[] {
     const baseArgs = [
       `--proxy-server=http://localhost:${proxyPort}`,
       `--user-data-dir=${setupResult.profileDir}`,
       '--no-first-run',
       '--no-default-browser-check',
-      // Disable background networking that might bypass proxy
-      '--disable-background-networking',
-      // Disable features that might cause certificate issues
-      '--disable-client-side-phishing-detection',
       // Allow localhost connections
       '--allow-insecure-localhost',
+      // Disable QUIC/HTTP3 which might bypass our proxy
+      '--disable-quic',
     ];
 
-    // On macOS, Chrome uses the system keychain, not NSS database
-    // So we need to use --ignore-certificate-errors for HTTPS interception
+    // If CA is installed in system keychain, Chrome will trust it natively
+    // This is the preferred mode - no suspicious flags needed
+    if (caInstalledInKeychain) {
+      console.log('Using trusted CA mode - no certificate override flags needed');
+      return baseArgs;
+    }
+
+    // Fallback: On macOS without trusted CA, we need --ignore-certificate-errors
+    // Note: This flag can trigger bot detection on some sites
     if (process.platform === 'darwin') {
+      console.log('Using untrusted CA mode - adding --ignore-certificate-errors');
       return [
         ...baseArgs,
         '--ignore-certificate-errors',
-        // Disable Certificate Transparency checking
-        '--disable-features=CertificateTransparencyComponentUpdater',
-        // Disable HSTS (HTTP Strict Transport Security) preload list
-        '--disable-hsts',
         // Reduce security warnings
         '--test-type',
-        // Disable QUIC/HTTP3 which might bypass our proxy
-        '--disable-quic',
       ];
     }
 

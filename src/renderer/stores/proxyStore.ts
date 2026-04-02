@@ -30,7 +30,7 @@ const defaultConfig: ProxyConfig = {
   autoStart: false,
 };
 
-export const useProxyStore = create<ProxyState>((set, get) => ({
+export const useProxyStore = create<ProxyState>((set) => ({
   status: defaultStatus,
   config: defaultConfig,
   isStarting: false,

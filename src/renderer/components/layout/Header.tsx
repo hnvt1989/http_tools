@@ -6,6 +6,7 @@ export const Header: React.FC = () => {
   const { status, isStarting, isStopping, start, stop } = useProxyStore();
   const [isLaunching, setIsLaunching] = useState(false);
   const [isBrowserRunning, setIsBrowserRunning] = useState(false);
+  const [isTerminalLaunching, setIsTerminalLaunching] = useState(false);
   const { isRecording, toggleRecording, clearEntries } = useTrafficStore();
 
   useEffect(() => {
@@ -112,6 +113,28 @@ export const Header: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
           {isLaunching ? 'Launching...' : isBrowserRunning ? 'Chrome Running' : 'Launch Chrome'}
+        </button>
+
+        <button
+          onClick={async () => {
+            setIsTerminalLaunching(true);
+            try {
+              if (!status.running) await start();
+              await window.electronAPI.terminal.launch();
+            } catch (error) {
+              console.error('Failed to launch terminal:', error);
+            } finally {
+              setIsTerminalLaunching(false);
+            }
+          }}
+          disabled={isTerminalLaunching}
+          className="px-3 py-1 rounded text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          title="Launch a terminal with proxy environment variables set"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {isTerminalLaunching ? 'Launching...' : 'Terminal'}
         </button>
       </div>
 

@@ -4,8 +4,7 @@ import { useTrafficStore } from '../../stores/trafficStore';
 import { useRulesStore } from '../../stores/rulesStore';
 import { TrafficItem } from './TrafficItem';
 import { ContextMenu, ContextMenuItem } from '../common/ContextMenu';
-import { RuleEditor } from '../rules/RuleEditor';
-import type { TrafficEntry, Rule, RuleType } from '../../../shared/types';
+import type { TrafficEntry, RuleType } from '../../../shared/types';
 
 interface ContextMenuState {
   x: number;

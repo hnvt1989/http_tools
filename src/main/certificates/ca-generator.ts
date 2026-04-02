@@ -2,7 +2,11 @@ import forge from 'node-forge';
 import fs from 'fs/promises';
 import path from 'path';
 import { app } from 'electron';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import type { CACertificate } from '../../shared/types';
+
+const execAsync = promisify(exec);
 
 export class CAGenerator {
   private certsDir: string;
@@ -150,5 +154,89 @@ export class CAGenerator {
     // Generate a random serial number
     const bytes = forge.random.getBytesSync(16);
     return forge.util.bytesToHex(bytes);
+  }
+
+  /**
+   * Get the path to the CA certificate file
+   */
+  getCertPath(): string {
+    return this.caCertPath;
+  }
+
+  /**
+   * Check if the CA certificate is installed and trusted in the login keychain (macOS)
+   */
+  async isCAInstalledInKeychain(): Promise<boolean> {
+    if (process.platform !== 'darwin') {
+      return false;
+    }
+
+    try {
+      // Search for our CA in the login keychain by name
+      const { stdout } = await execAsync(
+        `security find-certificate -c "HTTP Tools Proxy CA" ~/Library/Keychains/login.keychain-db 2>/dev/null || true`
+      );
+      return stdout.includes('HTTP Tools Proxy CA');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Install the CA certificate in the user's login keychain (macOS)
+   * This doesn't require admin privileges
+   */
+  async installCAInKeychain(): Promise<{ success: boolean; error?: string }> {
+    if (process.platform !== 'darwin') {
+      return { success: false, error: 'Only supported on macOS' };
+    }
+
+    try {
+      // First, remove any existing HTTP Tools CA certificates to avoid duplicates
+      try {
+        await execAsync(
+          `security delete-certificate -c "HTTP Tools Proxy CA" ~/Library/Keychains/login.keychain-db 2>/dev/null || true`
+        );
+      } catch {
+        // Ignore errors if certificate doesn't exist
+      }
+
+      // Add the certificate to the user's login keychain
+      await execAsync(
+        `security add-certificates -k ~/Library/Keychains/login.keychain-db "${this.caCertPath}"`
+      );
+
+      // Trust the certificate for SSL - this will show a macOS prompt asking user to trust
+      // Using add-trusted-cert with user keychain
+      await execAsync(
+        `security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db "${this.caCertPath}"`
+      );
+
+      console.log('CA certificate installed in login keychain');
+      return { success: true };
+    } catch (error: any) {
+      console.error('Failed to install CA in keychain:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Remove the CA certificate from the login keychain (macOS)
+   */
+  async removeCAFromKeychain(): Promise<{ success: boolean; error?: string }> {
+    if (process.platform !== 'darwin') {
+      return { success: false, error: 'Only supported on macOS' };
+    }
+
+    try {
+      await execAsync(
+        `security delete-certificate -c "HTTP Tools Proxy CA" ~/Library/Keychains/login.keychain-db`
+      );
+
+      console.log('CA certificate removed from login keychain');
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   }
 }

@@ -13,6 +13,7 @@ export interface ResponseData {
   headers: Record<string, string | string[] | undefined>;
   body: Buffer | string | null;
   endTime: number;
+  httpVersion?: string;
 }
 
 export interface TimingData {
@@ -194,4 +195,153 @@ export interface TrafficFilter {
   search?: string;
   showOnlyErrors?: boolean;
   showOnlyMocked?: boolean;
+}
+
+// WebSocket Types
+export interface WebSocketMessage {
+  id: string;
+  direction: 'sent' | 'received';
+  opcode: number; // 1=text, 2=binary, 8=close, 9=ping, 10=pong
+  data: string | Buffer;
+  timestamp: number;
+  size: number;
+}
+
+export interface WebSocketEntry {
+  id: string;
+  url: string;
+  protocol: 'ws' | 'wss';
+  status: 'connecting' | 'open' | 'closed' | 'error';
+  request: RequestData;
+  messages: WebSocketMessage[];
+  closeCode?: number;
+  closeReason?: string;
+  error?: string;
+  startTime: number;
+  endTime?: number;
+}
+
+// HAR Types
+export interface HarLog {
+  log: {
+    version: string;
+    creator: { name: string; version: string };
+    entries: HarEntry[];
+  };
+}
+
+export interface HarEntry {
+  startedDateTime: string;
+  time: number;
+  request: {
+    method: string;
+    url: string;
+    httpVersion: string;
+    cookies: any[];
+    headers: { name: string; value: string }[];
+    queryString: { name: string; value: string }[];
+    postData?: { mimeType: string; text: string; params?: { name: string; value: string }[] };
+    headersSize: number;
+    bodySize: number;
+  };
+  response: {
+    status: number;
+    statusText: string;
+    httpVersion: string;
+    cookies: any[];
+    headers: { name: string; value: string }[];
+    content: { size: number; mimeType: string; text?: string };
+    redirectURL: string;
+    headersSize: number;
+    bodySize: number;
+  };
+  cache: Record<string, any>;
+  timings: {
+    send: number;
+    wait: number;
+    receive: number;
+    dns?: number;
+    connect?: number;
+    ssl?: number;
+    blocked?: number;
+  };
+  comment?: string;
+}
+
+// Performance Analysis Types
+export interface PerformanceAnalysis {
+  compression: {
+    isCompressed: boolean;
+    encoding: string | null;
+    originalSize: number;
+    compressedSize: number;
+    savingsPercent: number;
+    suggestions: string[];
+  };
+  caching: {
+    isCacheable: boolean;
+    cacheControl: string | null;
+    maxAge: number | null;
+    expires: string | null;
+    etag: string | null;
+    lastModified: string | null;
+    isPublic: boolean;
+    isPrivate: boolean;
+    noStore: boolean;
+    noCache: boolean;
+    mustRevalidate: boolean;
+    suggestions: string[];
+  };
+  security: {
+    isHttps: boolean;
+    hasHsts: boolean;
+    hstsMaxAge: number | null;
+    hstsIncludesSubdomains: boolean;
+    hstsPreload: boolean;
+    hasCsp: boolean;
+    csp: string | null;
+    hasXFrameOptions: boolean;
+    xFrameOptions: string | null;
+    hasXContentTypeOptions: boolean;
+    hasReferrerPolicy: boolean;
+    referrerPolicy: string | null;
+    suggestions: string[];
+  };
+  suggestions: string[];
+}
+
+// Code Snippet Languages
+export type SnippetLanguage =
+  | 'curl'
+  | 'python'
+  | 'javascript'
+  | 'go'
+  | 'ruby'
+  | 'php'
+  | 'java'
+  | 'csharp'
+  | 'rust'
+  | 'httpie';
+
+// Upstream Proxy Configuration
+export interface UpstreamProxy {
+  enabled: boolean;
+  protocol: 'http' | 'https' | 'socks5';
+  host: string;
+  port: number;
+  auth?: {
+    username: string;
+    password: string;
+  };
+}
+
+// Extended App Settings
+export interface AppSettings {
+  proxy: ProxyConfig;
+  theme: 'light' | 'dark' | 'system';
+  fontSize: number;
+  maxTrafficEntries: number;
+  autoTrustCertificate: boolean;
+  upstreamProxy?: UpstreamProxy;
+  tlsPassthroughDomains?: string[];
 }

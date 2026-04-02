@@ -12,6 +12,11 @@ import type {
   CACertificate,
   AppSettings,
   BreakpointPause,
+  SnippetLanguage,
+  PerformanceAnalysis,
+  WebSocketEntry,
+  WebSocketMessage,
+  UpstreamProxy,
 } from '../shared/types';
 
 type Callback<T> = (data: T) => void;
@@ -44,12 +49,18 @@ const electronAPI = {
       ipcRenderer.on(IPC_CHANNELS.TRAFFIC_UPDATE, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.TRAFFIC_UPDATE, handler);
     },
+    getAll: (): Promise<TrafficEntry[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_GET_ALL),
     clear: (): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_CLEAR),
     export: (format: 'har' | 'json'): Promise<string> =>
       ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_EXPORT, format),
     import: (data: string, format: 'har' | 'json'): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_IMPORT, data, format),
+    exportHar: (): Promise<string> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_EXPORT_HAR),
+    importHar: (data: string): Promise<number> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TRAFFIC_IMPORT_HAR, data),
   },
 
   // Rules
@@ -82,6 +93,12 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.CERT_REGENERATE_CA),
     getTrustStatus: (): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.CERT_TRUST_STATUS),
+    isInstalled: (): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CERT_IS_INSTALLED),
+    install: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CERT_INSTALL_CA),
+    remove: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CERT_REMOVE_CA),
   },
 
   // HTTP Client
@@ -90,6 +107,8 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.CLIENT_SEND, request),
     cancel: (id: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CLIENT_CANCEL, id),
+    resend: (request: any): Promise<ClientResponse> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLIENT_RESEND, request),
   },
 
   // Saved Requests
@@ -125,6 +144,85 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.BREAKPOINT_RESUME, id, data),
     drop: (id: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.BREAKPOINT_DROP, id),
+    list: (): Promise<BreakpointPause[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.BREAKPOINT_LIST),
+  },
+
+  // WebSocket
+  websocket: {
+    onNew: (callback: Callback<WebSocketEntry>): Unsubscribe => {
+      const handler = (_: IpcRendererEvent, data: WebSocketEntry) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.WEBSOCKET_NEW, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WEBSOCKET_NEW, handler);
+    },
+    onMessage: (callback: (wsId: string, message: WebSocketMessage) => void): Unsubscribe => {
+      const handler = (_: IpcRendererEvent, wsId: string, message: WebSocketMessage) => callback(wsId, message);
+      ipcRenderer.on(IPC_CHANNELS.WEBSOCKET_MESSAGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WEBSOCKET_MESSAGE, handler);
+    },
+    onClosed: (callback: (wsId: string, code?: number, reason?: string) => void): Unsubscribe => {
+      const handler = (_: IpcRendererEvent, wsId: string, code?: number, reason?: string) => callback(wsId, code, reason);
+      ipcRenderer.on(IPC_CHANNELS.WEBSOCKET_CLOSED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WEBSOCKET_CLOSED, handler);
+    },
+    onError: (callback: (wsId: string, error: string) => void): Unsubscribe => {
+      const handler = (_: IpcRendererEvent, wsId: string, error: string) => callback(wsId, error);
+      ipcRenderer.on(IPC_CHANNELS.WEBSOCKET_ERROR, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.WEBSOCKET_ERROR, handler);
+    },
+  },
+
+  // Terminal
+  terminal: {
+    launch: (): Promise<{ launched: boolean; port?: number; envVars?: Record<string, string>; reason?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_LAUNCH),
+    onExited: (callback: () => void): Unsubscribe => {
+      const handler = () => callback();
+      ipcRenderer.on(IPC_CHANNELS.TERMINAL_EXITED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_EXITED, handler);
+    },
+  },
+
+  // Snippets
+  snippets: {
+    generate: (language: SnippetLanguage, request: any): Promise<string> =>
+      ipcRenderer.invoke(IPC_CHANNELS.SNIPPET_GENERATE, language, request),
+  },
+
+  // Performance
+  performance: {
+    analyze: (entry: TrafficEntry): Promise<PerformanceAnalysis> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PERFORMANCE_ANALYZE, entry),
+  },
+
+  // TLS Passthrough
+  tlsPassthrough: {
+    list: (): Promise<string[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TLS_PASSTHROUGH_LIST),
+    add: (domain: string): Promise<string[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TLS_PASSTHROUGH_ADD, domain),
+    remove: (domain: string): Promise<string[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TLS_PASSTHROUGH_REMOVE, domain),
+  },
+
+  // Upstream Proxy
+  upstreamProxy: {
+    get: (): Promise<UpstreamProxy> =>
+      ipcRenderer.invoke(IPC_CHANNELS.UPSTREAM_PROXY_GET),
+    set: (config: UpstreamProxy): Promise<UpstreamProxy> =>
+      ipcRenderer.invoke(IPC_CHANNELS.UPSTREAM_PROXY_SET, config),
+  },
+
+  // API Validation
+  apiValidation: {
+    addSpec: (id: string, specJson: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.API_SPEC_ADD, id, specJson),
+    removeSpec: (id: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.API_SPEC_REMOVE, id),
+    listSpecs: (): Promise<{ id: string; title: string; version: string }[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.API_SPEC_LIST),
+    validate: (request: any, response?: any): Promise<any> =>
+      ipcRenderer.invoke(IPC_CHANNELS.API_VALIDATE, request, response),
   },
 
   // Settings
@@ -158,6 +256,10 @@ const electronAPI = {
       ipcRenderer.on(IPC_CHANNELS.APP_BROWSER_EXITED, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.APP_BROWSER_EXITED, handler);
     },
+    writeFile: (filePath: string, content: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_WRITE_FILE, filePath, content),
+    readFile: (filePath: string): Promise<string> =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_READ_FILE, filePath),
   },
 };
 
